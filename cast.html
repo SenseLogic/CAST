@@ -8,7 +8,7 @@
 
     textarea
     {
-        height: 85vh;
+        height: 100%;
         width: 100%;
     }
 
@@ -17,6 +17,15 @@
         transform : scale( 0.8 );
 
         margin-right : 0.2rem;
+    }
+
+    .main-grid
+    {
+        height: 99vh;
+
+        display: grid;
+        grid-template-rows: auto 1fr;
+        grid-template-columns: 1fr;
     }
 
     .code-grid
@@ -30,8 +39,6 @@
 
     .option-grid
     {
-        padding: 0 1vh;
-
         display: flex;
         justify-content: space-between;
         align-items: center;
@@ -55,98 +62,100 @@
         align-items: end;
     }
 </style>
-<div class="code-grid">
-    <div>
-        <textarea id="old-code" placeholder="Old code" spellcheck="false"></textarea>
-    </div>
-    <div>
-        <textarea id="new-code" placeholder="New code" spellcheck="false"></textarea>
-    </div>
-</div>
-<div class="option-grid">
-    <div class="case-grid">
-        <div>
-            SCREAM_CASE :
-        </div>
-        <select id="scream-case">
-            <option value="SCREAM_CASE">
-                SCREAM_CASE
-            </option>
-            <option value="PascalCase" selected>
-                PascalCase
-            </option>
-            <option value="snake_case">
-                snake_case
-            </option>
-            <option value="camelCase">
-                camelCase
-            </option>
-        </select>
-        <div>
-            snake_case :
-        </div>
-        <select id="snake-case">
-            <option value="SCREAM_CASE">
-                SCREAM_CASE
-            </option>
-            <option value="PascalCase">
-                PascalCase
-            </option>
-            <option value="snake_case">
-                snake_case
-            </option>
-            <option value="camelCase" selected>
-                camelCase
-            </option>
-        </select>
-        <div>
-            PascalCase :
-        </div>
-        <select id="pascal-case">
-            <option value="SCREAM_CASE">
-                SCREAM_CASE
-            </option>
-            <option value="PascalCase">
-                PascalCase
-            </option>
-            <option value="snake_case">
-                snake_case
-            </option>
-            <option value="camelCase" selected>
-                camelCase
-            </option>
-        </select>
-        <div>
-            camelCase :
-        </div>
-        <select id="camel-case">
-            <option value="SCREAM_CASE">
-                SCREAM_CASE
-            </option>
-            <option value="PascalCase">
-                PascalCase
-            </option>
-            <option value="snake_case">
-                snake_case
-            </option>
-            <option value="camelCase" selected>
-                camelCase
-            </option>
-        </select>
-    </div>
-    <div>
-        <div>
-            <input id="braces" type="checkbox" checked/> Braces
+<div class="main-grid">
+    <div class="option-grid">
+        <div class="case-grid">
+            <div>
+                SCREAM_CASE :
+            </div>
+            <select id="scream-case">
+                <option value="SCREAM_CASE">
+                    SCREAM_CASE
+                </option>
+                <option value="PascalCase" selected>
+                    PascalCase
+                </option>
+                <option value="snake_case">
+                    snake_case
+                </option>
+                <option value="camelCase">
+                    camelCase
+                </option>
+            </select>
+            <div>
+                snake_case :
+            </div>
+            <select id="snake-case">
+                <option value="SCREAM_CASE">
+                    SCREAM_CASE
+                </option>
+                <option value="PascalCase">
+                    PascalCase
+                </option>
+                <option value="snake_case">
+                    snake_case
+                </option>
+                <option value="camelCase" selected>
+                    camelCase
+                </option>
+            </select>
+            <div>
+                PascalCase :
+            </div>
+            <select id="pascal-case">
+                <option value="SCREAM_CASE">
+                    SCREAM_CASE
+                </option>
+                <option value="PascalCase">
+                    PascalCase
+                </option>
+                <option value="snake_case">
+                    snake_case
+                </option>
+                <option value="camelCase" selected>
+                    camelCase
+                </option>
+            </select>
+            <div>
+                camelCase :
+            </div>
+            <select id="camel-case">
+                <option value="SCREAM_CASE">
+                    SCREAM_CASE
+                </option>
+                <option value="PascalCase">
+                    PascalCase
+                </option>
+                <option value="snake_case">
+                    snake_case
+                </option>
+                <option value="camelCase" selected>
+                    camelCase
+                </option>
+            </select>
         </div>
         <div>
-            <input id="brackets" type="checkbox" checked/> Brackets
+            <div>
+                <input id="braces" type="checkbox" checked/> Braces
+            </div>
+            <div>
+                <input id="brackets" type="checkbox" checked/> Brackets
+            </div>
+            <div>
+                <input id="identifiers" type="checkbox" checked/> Identifiers
+            </div>
         </div>
-        <div>
-            <input id="identifiers" type="checkbox" checked/> Identifiers
+        <div class="button-grid">
+            <button onclick="FixCode()" style="font-size: 1.5vh; padding: 0.5vh">Fix</button>
         </div>
     </div>
-    <div class="button-grid">
-        <button onclick="FixCode()" style="font-size: 1.5vh; padding: 0.5vh">Fix</button>
+    <div class="code-grid">
+        <div>
+            <textarea id="old-code" placeholder="Old code" spellcheck="false"></textarea>
+        </div>
+        <div>
+            <textarea id="new-code" placeholder="New code" spellcheck="false"></textarea>
+        </div>
     </div>
 </div>
 <script>
@@ -225,19 +234,19 @@
         identifier
         )
     {
-        if ( /^[A-Z][A-Z0-9]*(_[A-Z0-9]+)+$/.test( identifier ) )
+        if ( /^[A-Z][A-Z0-9_]+$/.test( identifier ) )
         {
             return "SCREAM_CASE";
         }
-        else if ( /^[A-Z][a-z0-9]*[a-zA-Z0-9]*$/.test( identifier ) )
+        else if ( /^[A-Z][a-zA-Z0-9]*$/.test( identifier ) )
         {
             return "PascalCase";
         }
-        else if ( /^[a-z][a-z0-9]*(_[a-z0-9]+)+$/.test( identifier ) )
+        else if ( /^[a-z][a-z0-9_]*$/.test( identifier ) )
         {
             return "snake_case";
         }
-        else if ( /^[a-z][a-z0-9]*[a-zA-Z0-9]*$/.test( identifier ) )
+        else if ( /^[a-z][a-zA-Z0-9]*$/.test( identifier ) )
         {
             return "camelCase";
         }
@@ -316,7 +325,7 @@
                     identifier_case;
 
                 identifier_case = GetIdentifierCase( identifier );
-
+console.log( identifier, identifier_case );
                 if ( identifier_case === "SCREAM_CASE" )
                 {
                     return GetFixedIdentifier( identifier, identifier_case, ScreamCaseIdentifierCase );
