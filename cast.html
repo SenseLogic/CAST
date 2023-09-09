@@ -201,7 +201,7 @@
             code
                 .replace( /\[(?=[^\s])/g, '[ ' )
                 .replace( /(?<=[^\s])\]/g, ' ]' )
-                .replaceAll( "[  ]", "[]" )
+                .replaceAll( "[ ]", "[]" )
             );
     }
 
@@ -215,7 +215,7 @@
             code
                 .replace( /\((?=[^\s])/g, '( ' )
                 .replace( /(?<=[^\s])\)/g, ' )' )
-                .replaceAll( "(  )", "()" )
+                .replaceAll( "( )", "()" )
             );
     }
 
@@ -370,5 +370,8 @@
         }
 
         document.getElementById( "new-code" ).value = code;
+        document.getElementById( "new-code" ).focus();
+        document.getElementById( "new-code" ).setSelectionRange( 0, code.length );
+        document.execCommand( "copy" );
     }
 </script>
