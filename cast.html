@@ -4,6 +4,8 @@
     {
         padding : 0;
         margin : 0;
+
+        font-family: sans-serif;
     }
 
     textarea
@@ -16,7 +18,7 @@
     {
         transform : scale( 0.8 );
 
-        margin-right : 0.2rem;
+        margin-right : 0.5rem;
     }
 
     .main-grid
@@ -60,6 +62,13 @@
         display: flex;
         justify-content: end;
         align-items: end;
+    }
+
+    .button
+    {
+        padding: 0.5vh;
+
+        font-size: 1.5vh;
     }
 </style>
 <div class="main-grid">
@@ -136,17 +145,23 @@
         </div>
         <div>
             <div>
-                <input id="braces" type="checkbox" checked/> Braces
+                <input id="blocks" type="checkbox" checked/>Blocks
             </div>
             <div>
-                <input id="brackets" type="checkbox" checked/> Brackets
+                <input id="braces" type="checkbox" checked/>Braces
             </div>
             <div>
-                <input id="identifiers" type="checkbox" checked/> Identifiers
+                <input id="brackets" type="checkbox" checked/>Brackets
+            </div>
+            <div>
+                <input id="parentheses" type="checkbox" checked/>Parentheses
+            </div>
+            <div>
+                <input id="identifiers" type="checkbox" checked/>Identifiers
             </div>
         </div>
         <div class="button-grid">
-            <button onclick="FixCode()" style="font-size: 1.5vh; padding: 0.5vh">Fix</button>
+            <button class="button" onclick="FixCode()">Fix</button>
         </div>
     </div>
     <div class="code-grid">
@@ -169,7 +184,7 @@
 
     // -- FUNCTIONS
 
-    function FixBraces(
+    function FixBlocks(
         code
         )
     {
@@ -197,6 +212,20 @@
                         return indentation + '}\n' + indentation + 'else';
                     }
                     )
+            );
+    }
+
+    // ~~
+
+    function FixBraces(
+        code
+        )
+    {
+        return (
+            code
+                .replace( /\{(?=[^\s])/g, '{ ' )
+                .replace( /(?<=[^\s])\}/g, ' }' )
+                .replaceAll( "{ }", "[}" )
             );
     }
 
@@ -362,6 +391,11 @@
 
         code = document.getElementById( "old-code" ).value;
 
+        if ( document.getElementById( "blocks" ).checked )
+        {
+            code = FixBlocks( code );
+        }
+
         if ( document.getElementById( "braces" ).checked )
         {
             code = FixBraces( code );
@@ -370,6 +404,10 @@
         if ( document.getElementById( "brackets" ).checked )
         {
             code = FixBrackets( code );
+        }
+
+        if ( document.getElementById( "parentheses" ).checked )
+        {
             code = FixParentheses( code );
         }
 

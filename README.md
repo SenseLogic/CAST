@@ -4,6 +4,10 @@
 
 Case fixer.
 
+## Limitations
+
+*   Doesn't check for string literals
+
 ## Version
 
 1.0
