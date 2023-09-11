@@ -78,10 +78,10 @@
                 SCREAM_CASE :
             </div>
             <select id="scream-case">
-                <option value="SCREAM_CASE">
+                <option value="SCREAM_CASE" selected>
                     SCREAM_CASE
                 </option>
-                <option value="PascalCase" selected>
+                <option value="PascalCase">
                     PascalCase
                 </option>
                 <option value="snake_case">
@@ -101,10 +101,10 @@
                 <option value="PascalCase">
                     PascalCase
                 </option>
-                <option value="snake_case">
+                <option value="snake_case" selected>
                     snake_case
                 </option>
-                <option value="camelCase" selected>
+                <option value="camelCase">
                     camelCase
                 </option>
             </select>
@@ -115,13 +115,13 @@
                 <option value="SCREAM_CASE">
                     SCREAM_CASE
                 </option>
-                <option value="PascalCase">
+                <option value="PascalCase" selected>
                     PascalCase
                 </option>
                 <option value="snake_case">
                     snake_case
                 </option>
-                <option value="camelCase" selected>
+                <option value="camelCase">
                     camelCase
                 </option>
             </select>
@@ -157,7 +157,7 @@
                 <input id="parentheses" type="checkbox" checked/>Parentheses
             </div>
             <div>
-                <input id="identifiers" type="checkbox" checked/>Identifiers
+                <input id="identifiers" type="checkbox"/>Identifiers
             </div>
         </div>
         <div class="button-grid">
@@ -177,10 +177,10 @@
     // -- VARIABLES
 
     var
-        ScreamCaseIdentifierCase = "PascalCase",
-        PascalCaseIdentifierCase = "camelCase",
-        SnakeCaseIdentifierCase = "camelCase",
-        CamelCaseIdentifierCase = "camelCase";
+        ScreamCaseIdentifierCase,
+        PascalCaseIdentifierCase,
+        SnakeCaseIdentifierCase,
+        CamelCaseIdentifierCase;
 
     // -- FUNCTIONS
 
@@ -208,9 +208,19 @@
                     /^( *)} else\s*$/gm,
                     function ( match, indentation )
                     {
-                        console.log( '|'+match+'|'+indentation+'|' );
                         return indentation + '}\n' + indentation + 'else';
                     }
+                    )
+                .replace(
+                    /^( *)}\s*\)(.*)$/gm,
+                    function ( match, indentation, code )
+                    {
+                        return indentation + '}\n' + indentation + ')' + code;
+                    }
+                    )
+                .replace(
+                    /[ \t]+$/gm,
+                    ''
                     )
             );
     }
