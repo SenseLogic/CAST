@@ -2,11 +2,11 @@
 
 # Cast
 
-Case fixer.
+Case transformer.
 
 ## Limitations
 
-*   Doesn't check for string literals
+*   Doesn't check for string literals.
 
 ## Version
 
