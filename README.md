@@ -2,7 +2,7 @@
 
 # Cast
 
-Case transformer.
+Code transformer.
 
 ## Limitations
 
