@@ -148,6 +148,12 @@
                 <input id="blocks" type="checkbox" checked/>Blocks
             </div>
             <div>
+                <input id="leading-spaces" type="checkbox" checked/>Leading spaces
+            </div>
+            <div>
+                <input id="trailing-spaces" type="checkbox" checked/>Trailing spaces
+            </div>
+            <div>
                 <input id="braces" type="checkbox" checked/>Braces
             </div>
             <div>
@@ -218,6 +224,34 @@
                         return indentation + '}\n' + indentation + ')' + code;
                     }
                     )
+            );
+    }
+
+    // ~~
+
+    function FixLeadingSpaces(
+        code
+        )
+    {
+        return (
+            code.replace(
+                /^(\s+)/gm,
+                function ( match )
+                {
+                    return match.replace(/ /g, '  ');
+                }
+                )
+            );
+    }
+
+    // ~~
+
+    function FixTrailingSpaces(
+        code
+        )
+    {
+        return (
+            code
                 .replace(
                     /[ \t]+$/gm,
                     ''
@@ -404,6 +438,16 @@
         if ( document.getElementById( "blocks" ).checked )
         {
             code = FixBlocks( code );
+        }
+
+        if ( document.getElementById( "leading-spaces" ).checked )
+        {
+            code = FixLeadingSpaces( code );
+        }
+
+        if ( document.getElementById( "trailing-spaces" ).checked )
+        {
+            code = FixTrailingSpaces( code );
         }
 
         if ( document.getElementById( "braces" ).checked )
