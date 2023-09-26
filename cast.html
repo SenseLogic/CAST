@@ -32,7 +32,7 @@
 
     .code-grid
     {
-        padding: 1vh;
+        padding: 0.5vh 1vh 1vh 1vh;
 
         display: grid;
         grid-template-columns: 1fr 1fr;
@@ -41,15 +41,14 @@
 
     .option-grid
     {
+        padding: 1vh;
+
         display: flex;
         justify-content: space-between;
-        align-items: center;
     }
 
     .case-grid
     {
-        padding: 1vh;
-
         display: grid;
         grid-template-columns: 1fr 1fr;
         column-gap: 1vh;
@@ -74,6 +73,10 @@
 <div class="main-grid">
     <div class="option-grid">
         <div class="case-grid">
+            <div>
+                Indentation :
+            </div>
+            <input id="indentation" type="text" value="    "/>
             <div>
                 SCREAM_CASE :
             </div>
@@ -145,25 +148,44 @@
         </div>
         <div>
             <div>
-                <input id="blocks" type="checkbox"/>Fix blocks
+                <input id="replace-tabs" type="checkbox"/>Replace tabs
             </div>
             <div>
-                <input id="leading-spaces" type="checkbox"/>Double leading spaces
+                <input id="remove-comments" type="checkbox"/>Remove comments
             </div>
             <div>
-                <input id="trailing-spaces" type="checkbox"/>Remove trailing spaces
+                <input id="double-leading-spaces" type="checkbox"/>Double leading space
             </div>
             <div>
-                <input id="braces" type="checkbox"/>Space braces
+                <input id="remove-trailing-spaces" type="checkbox"/>Remove trailing spaces
             </div>
             <div>
-                <input id="brackets" type="checkbox"/>Space brackets
+                <input id="remove-trailing-commas" type="checkbox"/>Remove trailing commas
             </div>
             <div>
-                <input id="parentheses" type="checkbox"/>Space parentheses
+                <input id="fix-braces" type="checkbox"/>Fix braces
+            </div>
+        </div>
+        <div>
+        </div>
+        <div>
+            <div>
+                <input id="indent-braces" type="checkbox"/>Indent braces
             </div>
             <div>
-                <input id="identifiers" type="checkbox"/>Fix identifiers
+                <input id="space-braces" type="checkbox"/>Space braces
+            </div>
+            <div>
+                <input id="space-brackets" type="checkbox"/>Space brackets
+            </div>
+            <div>
+                <input id="space-parentheses" type="checkbox"/>Space parentheses
+            </div>
+            <div>
+                <input id="fix-identifiers" type="checkbox"/>Fix identifiers
+            </div>
+            <div>
+                <input id="copy-result" type="checkbox"/>Copy result
             </div>
         </div>
         <div class="button-grid">
@@ -183,6 +205,7 @@
     // -- VARIABLES
 
     var
+        Indentation,
         ScreamCaseIdentifierCase,
         PascalCaseIdentifierCase,
         SnakeCaseIdentifierCase,
@@ -190,7 +213,57 @@
 
     // -- FUNCTIONS
 
-    function FixBlocks(
+    function GetLineIndentation(
+        line
+        )
+    {
+        line = line.trimRight();
+
+        return line.slice( 0, line.length - line.trimLeft().length );
+    }
+
+    // ~~
+
+    function GetLevelIndentation(
+        level
+        )
+    {
+        var
+            level_indentation;
+
+        level_indentation = "";
+
+        while ( level > 0 )
+        {
+            level_indentation += Indentation;
+
+            --level;
+        }
+
+        return level_indentation;
+    }
+
+    // ~~
+
+    function ReplaceTabs(
+        code
+        )
+    {
+        return code.replaceAll( "\t", Indentation );
+    }
+
+    // ~~
+
+    function RemoveComments(
+        code
+        )
+    {
+        return code.replace( /\/\/.*$/gm, "" );
+    }
+
+    // ~~
+
+    function FixBraces(
         code
         )
     {
@@ -202,11 +275,11 @@
                     {
                         if ( code === "" )
                         {
-                            return indentation + '{';
+                            return indentation + "{";
                         }
                         else
                         {
-                            return indentation + code + '\n' + indentation + '{';
+                            return indentation + code + "\n" + indentation + "{";
                         }
                     }
                     )
@@ -214,14 +287,14 @@
                     /^( *)} else\s*$/gm,
                     function ( match, indentation )
                     {
-                        return indentation + '}\n' + indentation + 'else';
+                        return indentation + "}\n" + indentation + "else";
                     }
                     )
                 .replace(
                     /^( *)}\s*\)(.*)$/gm,
                     function ( match, indentation, code )
                     {
-                        return indentation + '}\n' + indentation + ')' + code;
+                        return indentation + "}\n" + indentation + ")" + code;
                     }
                     )
             );
@@ -229,7 +302,7 @@
 
     // ~~
 
-    function FixLeadingSpaces(
+    function DoubleLeadingSpaces(
         code
         )
     {
@@ -238,7 +311,7 @@
                 /^(\s+)/gm,
                 function ( match )
                 {
-                    return match.replace(/ /g, '  ');
+                    return match.replace(/ /g, "  ");
                 }
                 )
             );
@@ -246,7 +319,7 @@
 
     // ~~
 
-    function FixTrailingSpaces(
+    function RemoveTrailingSpaces(
         code
         )
     {
@@ -254,49 +327,164 @@
             code
                 .replace(
                     /[ \t]+$/gm,
-                    ''
+                    ""
                     )
             );
     }
 
     // ~~
 
-    function FixBraces(
+    function RemoveTrailingCommas(
         code
         )
     {
         return (
             code
-                .replace( /\{(?=[^\s])/g, '{ ' )
-                .replace( /(?<=[^\s])\}/g, ' }' )
+                .replace(
+                    /,(?=\s*[)\]}])/gm,
+                    ""
+                    )
+            );
+    }
+
+    // ~~
+
+    function IndentBraces(
+        code
+        )
+    {
+        var
+            level,
+            level_array,
+            line,
+            line_array,
+            line_index,
+            next_level,
+            next_line,
+            next_line_array,
+            next_line_index;
+
+        line_array = code.split( "\n" );
+        level_array = [];
+        next_level_array = [];
+        level = 0;
+
+        for ( line_index = 0;
+              line_index < line_array.length;
+              ++line_index )
+        {
+            line = line_array[ line_index ].trimRight();
+            trimmed_line = line.trimLeft();
+
+            line_array[ line_index ] = line;
+
+            next_level = level;
+
+            while ( trimmed_line.endsWith( "(" )
+                 || trimmed_line.endsWith( "[" )
+                 || trimmed_line.endsWith( "{" ) )
+            {
+                ++next_level;
+
+                trimmed_line = trimmed_line.slice( 0, -1 );
+            }
+
+            while ( trimmed_line.startsWith( ")" )
+                    || trimmed_line.startsWith( "]" )
+                    || trimmed_line.startsWith( "}" ) )
+            {
+                --next_level;
+
+                if ( trimmed_line.startsWith( "}" ) )
+                {
+                    --level;
+                }
+
+                trimmed_line = trimmed_line.slice( 1 );
+            }
+
+            // console.log( line, level, next_level );
+
+            level_array.push( level );
+            next_level_array.push( next_level );
+            level = next_level;
+        }
+
+        for ( line_index = 0;
+              line_index < line_array.length;
+              ++line_index )
+        {
+            line = line_array[ line_index ];
+            level = level_array[ line_index ];
+
+            line_indentation = GetLineIndentation( line );
+            level_indentation = GetLevelIndentation( level );
+
+            if ( line_indentation.length < level_indentation.length )
+            {
+                added_indentation = level_indentation.slice( 0, level_indentation.length - line_indentation.length );
+
+                for ( next_line_index = line_index;
+                      next_line_index < line_array.length;
+                      ++next_line_index )
+                {
+                    next_line = line_array[ next_line_index ];
+                    next_level = level_array[ next_line_index ];
+
+                    if ( next_level >= level )
+                    {
+                        line_array[ next_line_index ] = added_indentation + next_line;
+                    }
+
+                    if ( next_level <= level )
+                    {
+                        break;
+                    }
+                }
+            }
+        }
+
+        return line_array.join( '\n' );
+    }
+
+    // ~~
+
+    function SpaceBraces(
+        code
+        )
+    {
+        return (
+            code
+                .replace( /\{(?=[^\s])/g, "{ " )
+                .replace( /(?<=[^\s])\}/g, " }" )
                 .replaceAll( "{ }", "[}" )
             );
     }
 
     // ~~
 
-    function FixBrackets(
+    function SpaceBrackets(
         code
         )
     {
         return (
             code
-                .replace( /\[(?=[^\s])/g, '[ ' )
-                .replace( /(?<=[^\s])\]/g, ' ]' )
+                .replace( /\[(?=[^\s])/g, "[ " )
+                .replace( /(?<=[^\s])\]/g, " ]" )
                 .replaceAll( "[ ]", "[]" )
             );
     }
 
     // ~~
 
-    function FixParentheses(
+    function SpaceParentheses(
         code
         )
     {
         return (
             code
-                .replace( /\((?=[^\s])/g, '( ' )
-                .replace( /(?<=[^\s])\)/g, ' )' )
+                .replace( /\((?=[^\s])/g, "( " )
+                .replace( /(?<=[^\s])\)/g, " )" )
                 .replaceAll( "( )", "()" )
             );
     }
@@ -339,7 +527,7 @@
         if ( identifier_case === "SCREAM_CASE"
              || identifier_case === "snake_case" )
         {
-            return identifier.split( '_' );
+            return identifier.split( "_" );
         }
         else if ( identifier_case === "PascalCase"
                   || identifier_case === "camelCase" )
@@ -364,19 +552,19 @@
 
         if ( new_identifier_case === "SCREAM_CASE" )
         {
-            return identifier_word_array.join( '_' ).toUpperCase();
+            return identifier_word_array.join( "_" ).toUpperCase();
         }
         else if ( new_identifier_case === "PascalCase" )
         {
-            return identifier_word_array.map( word => word.charAt( 0 ).toUpperCase() + word.slice( 1 ).toLowerCase() ).join( '' );
+            return identifier_word_array.map( word => word.charAt( 0 ).toUpperCase() + word.slice( 1 ).toLowerCase() ).join( "" );
         }
         else if ( new_identifier_case === "snake_case" )
         {
-            return identifier_word_array.join( '_' ).toLowerCase();
+            return identifier_word_array.join( "_" ).toLowerCase();
         }
         else if ( new_identifier_case === "camelCase" )
         {
-            return identifier_word_array[ 0 ].toLowerCase() + identifier_word_array.slice( 1 ).map( word => word.charAt( 0 ).toUpperCase() + word.slice( 1 ).toLowerCase() ).join( '' );
+            return identifier_word_array[ 0 ].toLowerCase() + identifier_word_array.slice( 1 ).map( word => word.charAt( 0 ).toUpperCase() + word.slice( 1 ).toLowerCase() ).join( "" );
         }
         else
         {
@@ -428,6 +616,10 @@
     function FixCode(
         )
     {
+        var
+            code;
+
+        Indentation = document.getElementById( "indentation" ).value;
         ScreamCaseIdentifierCase = document.getElementById( "scream-case" ).value,
         PascalCaseIdentifierCase = document.getElementById( "pascal-case" ).value,
         SnakeCaseIdentifierCase = document.getElementById( "snake-case" ).value,
@@ -435,44 +627,68 @@
 
         code = document.getElementById( "old-code" ).value;
 
-        if ( document.getElementById( "blocks" ).checked )
+        if ( document.getElementById( "replace-tabs" ).checked )
         {
-            code = FixBlocks( code );
+            code = ReplaceTabs( code );
         }
 
-        if ( document.getElementById( "leading-spaces" ).checked )
+        if ( document.getElementById( "remove-comments" ).checked )
         {
-            code = FixLeadingSpaces( code );
+            code = RemoveComments( code );
         }
 
-        if ( document.getElementById( "trailing-spaces" ).checked )
+        if ( document.getElementById( "double-leading-spaces" ).checked )
         {
-            code = FixTrailingSpaces( code );
+            code = DoubleLeadingSpaces( code );
         }
 
-        if ( document.getElementById( "braces" ).checked )
+        if ( document.getElementById( "remove-trailing-spaces" ).checked )
+        {
+            code = RemoveTrailingSpaces( code );
+        }
+
+        if ( document.getElementById( "remove-trailing-commas" ).checked )
+        {
+            code = RemoveTrailingCommas( code );
+        }
+
+        if ( document.getElementById( "fix-braces" ).checked )
         {
             code = FixBraces( code );
         }
 
-        if ( document.getElementById( "brackets" ).checked )
+        if ( document.getElementById( "indent-braces" ).checked )
         {
-            code = FixBrackets( code );
+            code = IndentBraces( code );
         }
 
-        if ( document.getElementById( "parentheses" ).checked )
+        if ( document.getElementById( "space-braces" ).checked )
         {
-            code = FixParentheses( code );
+            code = SpaceBraces( code );
         }
 
-        if ( document.getElementById( "identifiers" ).checked )
+        if ( document.getElementById( "space-brackets" ).checked )
+        {
+            code = SpaceBrackets( code );
+        }
+
+        if ( document.getElementById( "space-parentheses" ).checked )
+        {
+            code = SpaceParentheses( code );
+        }
+
+        if ( document.getElementById( "fix-identifiers" ).checked )
         {
             code = FixIdentifiers( code );
         }
 
         document.getElementById( "new-code" ).value = code;
         document.getElementById( "new-code" ).focus();
-        document.getElementById( "new-code" ).setSelectionRange( 0, code.length );
-        document.execCommand( "copy" );
+
+        if ( document.getElementById( "copy-result" ).checked )
+        {
+            document.getElementById( "new-code" ).setSelectionRange( 0, code.length );
+            document.execCommand( "copy" );
+        }
     }
 </script>
