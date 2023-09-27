@@ -59,15 +59,15 @@
         padding: 1vh;
 
         display: flex;
+        flex-direction: column;
         justify-content: end;
         align-items: end;
+        gap: 1vh;
     }
 
     .button
     {
         padding: 0.5vh;
-
-        font-size: 1.5vh;
     }
 </style>
 <div class="main-grid">
@@ -148,38 +148,41 @@
         </div>
         <div>
             <div>
-                <input id="replace-tabs" type="checkbox"/>Replace tabs
+                <input id="replace-tabs" type="checkbox" checked/>Replace tabs
             </div>
             <div>
-                <input id="remove-comments" type="checkbox"/>Remove comments
+                <input id="remove-comments" type="checkbox" checked/>Remove comments
             </div>
             <div>
-                <input id="double-leading-spaces" type="checkbox"/>Double leading space
+                <input id="double-leading-spaces" type="checkbox" checked/>Double leading spaces
             </div>
             <div>
-                <input id="remove-trailing-spaces" type="checkbox"/>Remove trailing spaces
+                <input id="remove-trailing-spaces" type="checkbox" checked/>Remove trailing spaces
             </div>
             <div>
-                <input id="remove-trailing-commas" type="checkbox"/>Remove trailing commas
+                <input id="remove-trailing-commas" type="checkbox" checked/>Remove trailing commas
             </div>
             <div>
-                <input id="fix-braces" type="checkbox"/>Fix braces
+                <input id="split-braces" type="checkbox" checked/>Split braces
+            </div>
+            <div>
+                <input id="split-brackets" type="checkbox" checked/>Split brackets
             </div>
         </div>
         <div>
         </div>
         <div>
             <div>
-                <input id="indent-braces" type="checkbox"/>Indent braces
+                <input id="indent-braces" type="checkbox" checked/>Indent braces
             </div>
             <div>
-                <input id="space-braces" type="checkbox"/>Space braces
+                <input id="space-braces" type="checkbox" checked/>Space braces
             </div>
             <div>
-                <input id="space-brackets" type="checkbox"/>Space brackets
+                <input id="space-brackets" type="checkbox" checked/>Space brackets
             </div>
             <div>
-                <input id="space-parentheses" type="checkbox"/>Space parentheses
+                <input id="space-parentheses" type="checkbox" checked/>Space parentheses
             </div>
             <div>
                 <input id="fix-identifiers" type="checkbox"/>Fix identifiers
@@ -189,6 +192,8 @@
             </div>
         </div>
         <div class="button-grid">
+            <button class="button" onclick="CheckAll()">Check all</button>
+            <button class="button" onclick="UncheckAll()">Uncheck all</button>
             <button class="button" onclick="FixCode()">Fix</button>
         </div>
     </div>
@@ -263,14 +268,16 @@
 
     // ~~
 
-    function FixBraces(
+    function SplitBraces(
         code
         )
     {
-        return (
+        code = RemoveTrailingSpaces( ReplaceTabs( code ) );
+
+        return RemoveTrailingSpaces(
             code
                 .replace(
-                    /^( *)([^\n]*)\{\s*$/gm,
+                    /^( *)([^\n]*)\{$/gm,
                     function ( match, indentation, code )
                     {
                         if ( code === "" )
@@ -284,17 +291,44 @@
                     }
                     )
                 .replace(
-                    /^( *)} else\s*$/gm,
+                    /^( *)\} *else$/gm,
                     function ( match, indentation )
                     {
                         return indentation + "}\n" + indentation + "else";
                     }
                     )
                 .replace(
-                    /^( *)}\s*\)(.*)$/gm,
+                    /^( *)\} *([^\n]+)$/gm,
                     function ( match, indentation, code )
                     {
-                        return indentation + "}\n" + indentation + ")" + code;
+                        return indentation + "}\n" + indentation + code;
+                    }
+                    )
+            );
+    }
+
+    // ~~
+
+    function SplitBrackets(
+        code
+        )
+    {
+        code = RemoveTrailingSpaces( ReplaceTabs( code ) );
+
+        return RemoveTrailingSpaces(
+            code
+                .replace(
+                    /^( *)([^\n]*\() *\[$/gm,
+                    function ( match, indentation, code )
+                    {
+                        return indentation + code + "\n" + indentation + "[";
+                    }
+                    )
+                .replace(
+                    /^( *)\] *\)(.*)$/gm,
+                    function ( match, indentation, code )
+                    {
+                        return indentation + "]\n" + indentation + ")" + code;
                     }
                     )
             );
@@ -306,9 +340,11 @@
         code
         )
     {
+        code = ReplaceTabs( code );
+
         return (
             code.replace(
-                /^(\s+)/gm,
+                /^( +)/gm,
                 function ( match )
                 {
                     return match.replace(/ /g, "  ");
@@ -323,6 +359,8 @@
         code
         )
     {
+        code = ReplaceTabs( code );
+
         return (
             code
                 .replace(
@@ -338,10 +376,12 @@
         code
         )
     {
+        code = ReplaceTabs( code );
+
         return (
             code
                 .replace(
-                    /,(?=\s*[)\]}])/gm,
+                    /,(?= *[)\]}])/gm,
                     ""
                     )
             );
@@ -403,7 +443,7 @@
                 trimmed_line = trimmed_line.slice( 1 );
             }
 
-            // console.log( line, level, next_level );
+            console.log( line, level, next_level );
 
             level_array.push( level );
             next_level_array.push( next_level );
@@ -613,6 +653,34 @@
 
     // ~~
 
+    function CheckAll(
+        )
+    {
+        var
+            checkbox;
+
+        for ( checkbox of document.querySelectorAll( "input[type=\"checkbox\"]" ) )
+        {
+            checkbox.checked = true;
+        }
+    }
+
+    // ~~
+
+    function UncheckAll(
+        )
+    {
+        var
+            checkbox;
+
+        for ( checkbox of document.querySelectorAll( "input[type=\"checkbox\"]" ) )
+        {
+            checkbox.checked = false;
+        }
+    }
+
+    // ~~
+
     function FixCode(
         )
     {
@@ -652,9 +720,14 @@
             code = RemoveTrailingCommas( code );
         }
 
-        if ( document.getElementById( "fix-braces" ).checked )
+        if ( document.getElementById( "split-braces" ).checked )
         {
-            code = FixBraces( code );
+            code = SplitBraces( code );
+        }
+
+        if ( document.getElementById( "split-brackets" ).checked )
+        {
+            code = SplitBrackets( code );
         }
 
         if ( document.getElementById( "indent-braces" ).checked )
