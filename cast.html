@@ -38,6 +38,11 @@
         grid-template-columns: 1fr 1fr;
         column-gap: 1vh;
     }
+    
+    .code-grid *
+    {        
+        font-family: monospace;
+    }
 
     .option-grid
     {
@@ -183,6 +188,9 @@
             </div>
             <div>
                 <input id="space-parentheses" type="checkbox" checked/>Space parentheses
+            </div>
+            <div>
+                <input id="remove-empty-lines" type="checkbox" checked/>Remove empty lines
             </div>
             <div>
                 <input id="fix-identifiers" type="checkbox"/>Fix identifiers
@@ -376,12 +384,10 @@
         code
         )
     {
-        code = ReplaceTabs( code );
-
         return (
             code
                 .replace(
-                    /,(?= *[)\]}])/gm,
+                    /,(?=\s*[)\]}])/gm,
                     ""
                     )
             );
@@ -527,6 +533,36 @@
                 .replace( /(?<=[^\s])\)/g, " )" )
                 .replaceAll( "( )", "()" )
             );
+    }
+
+    // ~~
+
+    function RemoveEmptyLines(
+        code
+        )
+    {
+        var
+            line,
+            line_array,
+            prior_line;
+            
+        line_array = []
+        prior_line = "";
+        
+        for ( line of code.split( "\n" ) )
+        {
+            line = line.trimRight();
+            
+            if ( line !== ""
+                 || prior_line !== "" )
+            {
+                line_array.push( line );
+            }
+            
+            prior_line = line;
+        }
+        
+        return line_array.join( '\n' );
     }
 
     // ~~
@@ -748,6 +784,11 @@
         if ( document.getElementById( "space-parentheses" ).checked )
         {
             code = SpaceParentheses( code );
+        }
+
+        if ( document.getElementById( "remove-empty-lines" ).checked )
+        {
+            code = RemoveEmptyLines( code );
         }
 
         if ( document.getElementById( "fix-identifiers" ).checked )
