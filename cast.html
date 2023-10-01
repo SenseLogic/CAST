@@ -38,9 +38,9 @@
         grid-template-columns: 1fr 1fr;
         column-gap: 1vh;
     }
-    
+
     .code-grid *
-    {        
+    {
         font-family: monospace;
     }
 
@@ -190,7 +190,7 @@
                 <input id="space-parentheses" type="checkbox" checked/>Space parentheses
             </div>
             <div>
-                <input id="remove-empty-lines" type="checkbox" checked/>Remove empty lines
+                <input id="fix-empty-lines" type="checkbox" checked/>Fix empty lines
             </div>
             <div>
                 <input id="fix-identifiers" type="checkbox"/>Fix identifiers
@@ -537,7 +537,7 @@
 
     // ~~
 
-    function RemoveEmptyLines(
+    function FixEmptyLines(
         code
         )
     {
@@ -545,24 +545,33 @@
             line,
             line_array,
             prior_line;
-            
+
         line_array = []
         prior_line = "";
-        
+
         for ( line of code.split( "\n" ) )
         {
             line = line.trimRight();
-            
+
             if ( line !== ""
                  || prior_line !== "" )
             {
                 line_array.push( line );
             }
-            
+
             prior_line = line;
         }
-        
-        return line_array.join( '\n' );
+
+        return (
+            line_array
+                .join( '\n' )
+                .replaceAll( '{\n\n', '{\n' )
+                .replaceAll( '[\n\n', '[\n' )
+                .replaceAll( '(\n\n', '(\n' )
+                .replace( /\n\n( *)\}/g, '\n$1}' )
+                .replace( /\n\n( *)\]/g, '\n$1]' )
+                .replace( /\n\n( *)\)/g, '\n$1)' )
+            );
     }
 
     // ~~
@@ -786,9 +795,9 @@
             code = SpaceParentheses( code );
         }
 
-        if ( document.getElementById( "remove-empty-lines" ).checked )
+        if ( document.getElementById( "fix-empty-lines" ).checked )
         {
-            code = RemoveEmptyLines( code );
+            code = FixEmptyLines( code );
         }
 
         if ( document.getElementById( "fix-identifiers" ).checked )
