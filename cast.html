@@ -309,7 +309,14 @@
                     /^( *)\} *([^\n]+)$/gm,
                     function ( match, indentation, code )
                     {
-                        return indentation + "}\n" + indentation + code;
+                        if ( code.startsWith( ';' ) )
+                        {
+                            return indentation + '}' + code;
+                        }
+                        else
+                        {
+                            return indentation + "}\n" + indentation + code;
+                        }
                     }
                     )
             );
