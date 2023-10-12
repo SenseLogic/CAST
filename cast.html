@@ -510,7 +510,7 @@
             code
                 .replace( /\{(?=[^\s])/g, "{ " )
                 .replace( /(?<=[^\s])\}/g, " }" )
-                .replaceAll( "{ }", "[}" )
+                .replaceAll( "{ }", "{}" )
             );
     }
 
