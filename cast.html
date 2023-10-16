@@ -156,7 +156,7 @@
                 <input id="replace-tabs" type="checkbox" checked/>Replace tabs
             </div>
             <div>
-                <input id="remove-comments" type="checkbox" checked/>Remove comments
+                <input id="remove-comments" type="checkbox"/>Remove comments
             </div>
             <div>
                 <input id="double-leading-spaces" type="checkbox"/>Double leading spaces
@@ -309,7 +309,8 @@
                     /^( *)\} *([^\n]+)$/gm,
                     function ( match, indentation, code )
                     {
-                        if ( code.startsWith( ';' ) )
+                        if ( code.startsWith( ',' )
+                             || code.startsWith( ';' ) )
                         {
                             return indentation + '}' + code;
                         }
