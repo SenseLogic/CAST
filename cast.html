@@ -457,8 +457,6 @@
                 trimmed_line = trimmed_line.slice( 1 );
             }
 
-            console.log( line, level, next_level );
-
             level_array.push( level );
             next_level_array.push( next_level );
             level = next_level;
@@ -552,6 +550,8 @@
         var
             line,
             line_array,
+            line_index,
+            next_line,
             prior_line;
 
         line_array = []
@@ -570,16 +570,54 @@
             prior_line = line;
         }
 
-        return (
-            line_array
-                .join( '\n' )
-                .replaceAll( '{\n\n', '{\n' )
-                .replaceAll( '[\n\n', '[\n' )
-                .replaceAll( '(\n\n', '(\n' )
-                .replace( /\n\n( *)\}/g, '\n$1}' )
-                .replace( /\n\n( *)\]/g, '\n$1]' )
-                .replace( /\n\n( *)\)/g, '\n$1)' )
-            );
+        code
+            = line_array
+                  .join( "\n" )
+                  .replaceAll( "{\n\n", "{\n" )
+                  .replaceAll( "[\n\n", "[\n" )
+                  .replaceAll( "(\n\n", "(\n" )
+                  .replace( /\n\n( *)\}/g, "\n$1}" )
+                  .replace( /\n\n( *)\]/g, "\n$1]" )
+                  .replace( /\n\n( *)\)/g, "\n$1)" );
+
+        line_array = code.split( "\n" );
+
+        for ( line_index = 0;
+              line_index < line_array.length - 1;
+              ++line_index )
+        {
+            line = line_array[ line_index ].trim();
+            next_line = line_array[ line_index + 1 ].trim();
+
+            if ( line !== ""
+                 && next_line !== "" )
+            {
+                if ( ( line.startsWith( "// -- " )
+                       || line.startsWith( "// ~~" ) 
+                       || ( line === "}" 
+                            && next_line !== "else" 
+                            && !next_line.startsWith( "else " )
+                            && !next_line.startsWith( "}" )
+                            && !next_line.startsWith( "]" )
+                            && !next_line.startsWith( ")" )
+                            && !next_line.startsWith( "<" ) ) )
+                     || ( line !== "{"
+                          && ( next_line.startsWith( "// -- " )
+                               || next_line.startsWith( "// ~~" )
+                               || next_line.startsWith( "if " )
+                               || next_line.startsWith( "do " )
+                               || ( line !== "}"
+                                    && next_line.startsWith( "while " ) )
+                               || next_line.startsWith( "for " )
+                               || next_line.startsWith( "return " )
+                               || next_line == "return" ) ) )
+                {
+                    line_array.splice( line_index + 1, 0, "" );
+                }
+            }
+        }
+        
+        return line_array.join( "\n" );
     }
 
     // ~~
