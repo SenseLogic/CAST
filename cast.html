@@ -408,15 +408,19 @@
         )
     {
         var
+            added_indentation,
             level,
             level_array,
+            level_indentation,
             line,
             line_array,
+            line_indentation,
             line_index,
             next_level,
+            next_level_array,
             next_line,
-            next_line_array,
-            next_line_index;
+            next_line_index,
+            trimmed_line;
 
         line_array = code.split( "\n" );
         level_array = [];
@@ -496,7 +500,7 @@
             }
         }
 
-        return line_array.join( '\n' );
+        return line_array.join( "\n" );
     }
 
     // ~~
@@ -554,7 +558,7 @@
             next_line,
             prior_line;
 
-        line_array = []
+        line_array = [];
         prior_line = "";
 
         for ( line of code.split( "\n" ) )
@@ -779,9 +783,9 @@
             code;
 
         Indentation = document.getElementById( "indentation" ).value;
-        ScreamCaseIdentifierCase = document.getElementById( "scream-case" ).value,
-        PascalCaseIdentifierCase = document.getElementById( "pascal-case" ).value,
-        SnakeCaseIdentifierCase = document.getElementById( "snake-case" ).value,
+        ScreamCaseIdentifierCase = document.getElementById( "scream-case" ).value;
+        PascalCaseIdentifierCase = document.getElementById( "pascal-case" ).value;
+        SnakeCaseIdentifierCase = document.getElementById( "snake-case" ).value;
         CamelCaseIdentifierCase = document.getElementById( "camel-case" ).value;
 
         code = document.getElementById( "old-code" ).value;
