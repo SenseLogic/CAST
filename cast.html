@@ -363,7 +363,7 @@
                 /^( +)/gm,
                 function ( match )
                 {
-                    return match.replace(/ /g, "  ");
+                    return match.replaceAll( " ", "  " );
                 }
                 )
             );
@@ -505,16 +505,159 @@
 
     // ~~
 
+    function IsBlankCharacter(
+        character
+        )
+    {
+        return (
+            character === ""
+            || character === " "
+            || character === "\t"
+            || character === "\r"
+            || character === "\n"
+            );
+    }
+
+    // ~~
+
+    function SpaceBlocks(
+        code,
+        opening_character,
+        closing_character
+        )
+    {
+        var
+            character,
+            character_index,
+            literal_character,
+            next_character,
+            prior_code;
+
+        code = RemoveTrailingSpaces( ReplaceTabs( code ) );
+
+        literal_character = "";
+
+        for ( character_index = 0;
+              character_index + 1 < code.length;
+              ++character_index )
+        {
+            character = code[ character_index ];
+            next_character = code[ character_index + 1 ];
+
+            if ( character === '\n'
+                 && literal_character !== "`" )
+            {
+                literal_character = "";
+            }
+
+            if ( literal_character !== "" )
+            {
+                if ( character === "\\" )
+                {
+                    ++character_index;
+                }
+                else if ( character === literal_character )
+                {
+                    literal_character = "";
+                }
+            }
+            else if ( character === "/"
+                      && next_character === "/" )
+            {
+                character_index += 2;
+
+                while ( character_index < code.length
+                        && code[ character_index ] !== '\n' )
+                {
+                    ++character_index;
+                }
+            }
+            else if ( character === "/"
+                      && next_character === "*" )
+            {
+                character_index += 2;
+
+                while ( character_index + 1 < code.length
+                        && code[ character_index ] !== '*'
+                        && code[ character_index + 1 ] !== '/' )
+                {
+                    ++character_index;
+                }
+            }
+            else
+            {
+                if ( character === "/"
+                     && next_character !== "/" )
+                {
+                    prior_code = code.slice( 0, character_index ).trimRight();
+
+                    if ( prior_code === ""
+                         || prior_code.endsWith( "=" )
+                         || prior_code.endsWith( "<" )
+                         || prior_code.endsWith( ">" )
+                         || prior_code.endsWith( "+" )
+                         || prior_code.endsWith( "-" )
+                         || prior_code.endsWith( "*" )
+                         || prior_code.endsWith( "/" )
+                         || prior_code.endsWith( "%" )
+                         || prior_code.endsWith( "^" )
+                         || prior_code.endsWith( "~" )
+                         || prior_code.endsWith( "&" )
+                         || prior_code.endsWith( "|" )
+                         || prior_code.endsWith( "!" )
+                         || prior_code.endsWith( "?" )
+                         || prior_code.endsWith( ":" )
+                         || prior_code.endsWith( "(" )
+                         || prior_code.endsWith( "[" )
+                         || prior_code.endsWith( "{" )
+                         || prior_code.endsWith( ";" )
+                         || prior_code.endsWith( "," )
+                         || prior_code.endsWith( " return" )
+                         || prior_code.endsWith( "\treturn" )
+                         || prior_code.endsWith( "\rreturn" )
+                         || prior_code.endsWith( "\nreturn" )
+                         || prior_code === "return" )
+                    {
+                        literal_character = "/";
+
+                        continue;
+                    }
+                }
+
+                if ( character === "'"
+                     || character === "\""
+                     || character === "`" )
+                {
+                    literal_character = character;
+                }
+                else
+                {
+                    if ( ( character === opening_character
+                           && next_character !== closing_character
+                           && !IsBlankCharacter( next_character ) )
+                         || ( next_character === closing_character
+                              && character !== opening_character
+                              && !IsBlankCharacter( character ) ) )
+                    {
+                        code
+                            = code.slice( 0, character_index + 1 )
+                              + " "
+                              + code.slice( character_index + 1 );
+                    }
+                }
+            }
+        }
+
+        return code;
+    }
+
+    // ~~
+
     function SpaceBraces(
         code
         )
     {
-        return (
-            code
-                .replace( /\{(?=[^\s])/g, "{ " )
-                .replace( /(?<=[^\s])\}/g, " }" )
-                .replaceAll( "{ }", "{}" )
-            );
+        return SpaceBlocks( code, "{", "}" );
     }
 
     // ~~
@@ -523,12 +666,7 @@
         code
         )
     {
-        return (
-            code
-                .replace( /\[(?=[^\s])/g, "[ " )
-                .replace( /(?<=[^\s])\]/g, " ]" )
-                .replaceAll( "[ ]", "[]" )
-            );
+        return SpaceBlocks( code, "[", "]" );
     }
 
     // ~~
@@ -537,12 +675,7 @@
         code
         )
     {
-        return (
-            code
-                .replace( /\((?=[^\s])/g, "( " )
-                .replace( /(?<=[^\s])\)/g, " )" )
-                .replaceAll( "( )", "()" )
-            );
+        return SpaceBlocks( code, "(", ")" );
     }
 
     // ~~
@@ -597,9 +730,9 @@
                  && next_line !== "" )
             {
                 if ( ( line.startsWith( "// -- " )
-                       || line.startsWith( "// ~~" ) 
-                       || ( line === "}" 
-                            && next_line !== "else" 
+                       || line.startsWith( "// ~~" )
+                       || ( line === "}"
+                            && next_line !== "else"
                             && !next_line.startsWith( "else " )
                             && !next_line.startsWith( "}" )
                             && !next_line.startsWith( "]" )
@@ -620,7 +753,7 @@
                 }
             }
         }
-        
+
         return line_array.join( "\n" );
     }
 
