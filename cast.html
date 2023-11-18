@@ -200,9 +200,9 @@
             </div>
         </div>
         <div class="button-grid">
-            <button class="button" onclick="CheckAll()">Check all</button>
-            <button class="button" onclick="UncheckAll()">Uncheck all</button>
-            <button class="button" onclick="FixCode()">Fix</button>
+            <button class="button" onclick="checkAll()">Check all</button>
+            <button class="button" onclick="uncheckAll()">Uncheck all</button>
+            <button class="button" onclick="fixCode()">Fix</button>
         </div>
     </div>
     <div class="code-grid">
@@ -217,16 +217,33 @@
 <script>
     // -- VARIABLES
 
-    var
-        Indentation,
-        ScreamCaseIdentifierCase,
-        PascalCaseIdentifierCase,
-        SnakeCaseIdentifierCase,
-        CamelCaseIdentifierCase;
+    let indentation = '    ';
+    let screamCaseIdentifierCase = 'SCREAM_CASE';
+    let pascalCaseIdentifierCase = 'PascalCase';
+    let snakeCaseIdentifierCase = 'snake_case';
+    let camelCaseIdentifierCase = 'camelCase';
 
     // -- FUNCTIONS
 
-    function GetLineIndentation(
+    function getLineLevel(
+        line
+        )
+    {
+        let level = 0;
+
+        while ( line.startsWith( indentation ) )
+        {
+            ++level;
+
+            line = line.slice( indentation.length );
+        }
+
+        return level;
+    }
+
+    // ~~
+
+    function getLineIndentation(
         line
         )
     {
@@ -237,64 +254,211 @@
 
     // ~~
 
-    function GetLevelIndentation(
+    function getLevelIndentation(
         level
         )
     {
-        var
-            level_indentation;
-
-        level_indentation = "";
+        let levelIndentation = '';
 
         while ( level > 0 )
         {
-            level_indentation += Indentation;
+            levelIndentation += indentation;
 
             --level;
         }
 
-        return level_indentation;
+        return levelIndentation;
     }
 
     // ~~
 
-    function ReplaceTabs(
-        code
+    function getProcessedCode(
+        code,
+        codeProcessingFunction
         )
     {
-        return code.replaceAll( "\t", Indentation );
+        let processedIntervalArray = [];
+        let priorProcessedCharacterIndex = -2;
+        let literalCharacter = '';
+
+        for ( let characterIndex = 0;
+              characterIndex + 1 < code.length;
+              ++characterIndex )
+        {
+            let character = code[ characterIndex ];
+            let nextCharacter = code[ characterIndex + 1 ];
+
+            if ( literalCharacter !== '' )
+            {
+                if ( character === '\\' )
+                {
+                    ++characterIndex;
+                }
+                else if ( character === literalCharacter
+                          || ( character === '\n'
+                               && literalCharacter !== '`' ) )
+                {
+                    literalCharacter = '';
+                }
+            }
+            else if ( character === '/'
+                      && nextCharacter === '/' )
+            {
+                characterIndex += 2;
+
+                while ( characterIndex < code.length
+                        && code[ characterIndex ] !== '\n' )
+                {
+                    ++characterIndex;
+                }
+            }
+            else if ( character === '/'
+                      && nextCharacter === '*' )
+            {
+                characterIndex += 2;
+
+                while ( characterIndex + 1 < code.length
+                        && code[ characterIndex ] !== '*'
+                        && code[ characterIndex + 1 ] !== '/' )
+                {
+                    ++characterIndex;
+                }
+            }
+            else
+            {
+                if ( character === '/' )
+                {
+                    let priorCode = code.slice( 0, characterIndex ).trimRight();
+
+                    if ( priorCode === ''
+                         || priorCode.endsWith( '=' )
+                         || priorCode.endsWith( '<' )
+                         || priorCode.endsWith( '>' )
+                         || priorCode.endsWith( '+' )
+                         || priorCode.endsWith( '-' )
+                         || priorCode.endsWith( '*' )
+                         || priorCode.endsWith( '/' )
+                         || priorCode.endsWith( '%' )
+                         || priorCode.endsWith( '^' )
+                         || priorCode.endsWith( '~' )
+                         || priorCode.endsWith( '&' )
+                         || priorCode.endsWith( '|' )
+                         || priorCode.endsWith( '!' )
+                         || priorCode.endsWith( '?' )
+                         || priorCode.endsWith( ':' )
+                         || priorCode.endsWith( '(' )
+                         || priorCode.endsWith( '[' )
+                         || priorCode.endsWith( '{' )
+                         || priorCode.endsWith( ';' )
+                         || priorCode.endsWith( ',' )
+                         || priorCode.endsWith( ' return' )
+                         || priorCode.endsWith( '\treturn' )
+                         || priorCode.endsWith( '\rreturn' )
+                         || priorCode.endsWith( '\nreturn' )
+                         || priorCode === 'return' )
+                    {
+                        literalCharacter = '/';
+
+                        continue;
+                    }
+                }
+
+                if ( character === '\''
+                     || character === '"'
+                     || character === '`' )
+                {
+                    literalCharacter = character;
+                }
+                else
+                {
+                    if ( characterIndex !== priorProcessedCharacterIndex + 1 )
+                    {
+                        processedIntervalArray.push( [ characterIndex, characterIndex + 1 ] );
+                    }
+                    else
+                    {
+                        processedIntervalArray[ processedIntervalArray.length - 1 ][ 1 ] = characterIndex + 1;
+                    }
+
+                    priorProcessedCharacterIndex = characterIndex;
+                }
+            }
+        }
+
+        let processedIntervalCount = processedIntervalArray.length;
+
+        if ( processedIntervalCount === 0 )
+        {
+            return code;
+        }
+        else
+        {
+            let processedCode = code.slice( 0, processedIntervalArray[ 0 ] );
+
+            for ( let processedIntervalIndex = 0;
+                  processedIntervalIndex < processedIntervalCount;
+                  ++processedIntervalIndex )
+            {
+                let processedInterval = processedIntervalArray[ processedIntervalIndex ];
+
+                if ( processedIntervalIndex > 0 )
+                {
+                    let priorProcessedInterval = processedIntervalArray[ processedIntervalIndex - 1 ];
+
+                    processedCode += code.slice( priorProcessedInterval[ 1 ], processedInterval[ 0 ] );
+                }
+
+                processedCode
+                    += codeProcessingFunction(
+                           code.slice( processedInterval[ 0 ], processedInterval[ 1 ] )
+                           );
+            }
+
+            processedCode += code.slice( processedIntervalArray[ processedIntervalCount - 1 ][ 1 ] );
+
+            return processedCode;
+        }
     }
 
     // ~~
 
-    function RemoveComments(
+    function replaceTabs(
         code
         )
     {
-        return code.replace( /\/\/.*$/gm, "" );
+        return code.replaceAll( '\t', indentation );
     }
 
     // ~~
 
-    function SplitBraces(
+    function removeComments(
         code
         )
     {
-        code = RemoveTrailingSpaces( ReplaceTabs( code ) );
+        return code.replace( /\/\/.*$/gm, '' );
+    }
 
-        return RemoveTrailingSpaces(
+    // ~~
+
+    function splitBraces(
+        code
+        )
+    {
+        code = removeTrailingSpaces( replaceTabs( code ) );
+
+        return removeTrailingSpaces(
             code
                 .replace(
                     /^( *)([^\n]*)\{$/gm,
                     function ( match, indentation, code )
                     {
-                        if ( code === "" )
+                        if ( code === '' )
                         {
-                            return indentation + "{";
+                            return indentation + '{';
                         }
                         else
                         {
-                            return indentation + code + "\n" + indentation + "{";
+                            return indentation + code + '\n' + indentation + '{';
                         }
                     }
                     )
@@ -302,7 +466,7 @@
                     /^( *)\} *else$/gm,
                     function ( match, indentation )
                     {
-                        return indentation + "}\n" + indentation + "else";
+                        return indentation + '}\n' + indentation + 'else';
                     }
                     )
                 .replace(
@@ -316,7 +480,7 @@
                         }
                         else
                         {
-                            return indentation + "}\n" + indentation + code;
+                            return indentation + '}\n' + indentation + code;
                         }
                     }
                     )
@@ -325,26 +489,26 @@
 
     // ~~
 
-    function SplitBrackets(
+    function splitBrackets(
         code
         )
     {
-        code = RemoveTrailingSpaces( ReplaceTabs( code ) );
+        code = removeTrailingSpaces( replaceTabs( code ) );
 
-        return RemoveTrailingSpaces(
+        return removeTrailingSpaces(
             code
                 .replace(
                     /^( *)([^\n]*\() *\[$/gm,
                     function ( match, indentation, code )
                     {
-                        return indentation + code + "\n" + indentation + "[";
+                        return indentation + code + '\n' + indentation + '[';
                     }
                     )
                 .replace(
                     /^( *)\] *\)(.*)$/gm,
                     function ( match, indentation, code )
                     {
-                        return indentation + "]\n" + indentation + ")" + code;
+                        return indentation + ']\n' + indentation + ')' + code;
                     }
                     )
             );
@@ -352,18 +516,18 @@
 
     // ~~
 
-    function DoubleLeadingSpaces(
+    function doubleLeadingSpaces(
         code
         )
     {
-        code = ReplaceTabs( code );
+        code = replaceTabs( code );
 
         return (
             code.replace(
                 /^( +)/gm,
                 function ( match )
                 {
-                    return match.replaceAll( " ", "  " );
+                    return match.replaceAll( ' ', '  ' );
                 }
                 )
             );
@@ -371,24 +535,24 @@
 
     // ~~
 
-    function RemoveTrailingSpaces(
+    function removeTrailingSpaces(
         code
         )
     {
-        code = ReplaceTabs( code );
+        code = replaceTabs( code );
 
         return (
             code
                 .replace(
                     /[ \t]+$/gm,
-                    ""
+                    ''
                     )
             );
     }
 
     // ~~
 
-    function RemoveTrailingCommas(
+    function removeTrailingCommas(
         code
         )
     {
@@ -396,103 +560,103 @@
             code
                 .replace(
                     /,(?=\s*[)\]}])/gm,
-                    ""
+                    ''
                     )
             );
     }
 
     // ~~
 
-    function IndentBraces(
+    function indentBraces(
         code
         )
     {
-        var
-            added_indentation,
-            level,
-            level_array,
-            level_indentation,
-            line,
-            line_array,
-            line_indentation,
-            line_index,
-            next_level,
-            next_level_array,
-            next_line,
-            next_line_index,
-            trimmed_line;
+        let lineArray = code.split( '\n' );
 
-        line_array = code.split( "\n" );
-        level_array = [];
-        next_level_array = [];
-        level = 0;
+        let levelArray = [];
+        let nextLevelArray = [];
+        let level = 0;
 
-        for ( line_index = 0;
-              line_index < line_array.length;
-              ++line_index )
+        for ( let lineIndex = 0;
+              lineIndex < lineArray.length;
+              ++lineIndex )
         {
-            line = line_array[ line_index ].trimRight();
-            trimmed_line = line.trimLeft();
+            let line = lineArray[ lineIndex ].trimRight();
 
-            line_array[ line_index ] = line;
-
-            next_level = level;
-
-            while ( trimmed_line.endsWith( "(" )
-                    || trimmed_line.endsWith( "[" )
-                    || trimmed_line.endsWith( "{" ) )
+            if ( line !== '' )
             {
-                ++next_level;
+                level = getLineLevel( line );
 
-                trimmed_line = trimmed_line.slice( 0, -1 );
+                break;
+            }
+        }
+
+        for ( let lineIndex = 0;
+              lineIndex < lineArray.length;
+              ++lineIndex )
+        {
+            let line = lineArray[ lineIndex ].trimRight();
+            let trimmedLine = line.trimLeft();
+
+            lineArray[ lineIndex ] = line;
+
+            let nextLevel = level;
+
+            while ( trimmedLine.endsWith( '(' )
+                    || trimmedLine.endsWith( '[' )
+                    || trimmedLine.endsWith( '{' ) )
+            {
+                ++nextLevel;
+
+                trimmedLine = trimmedLine.slice( 0, -1 );
             }
 
-            while ( trimmed_line.startsWith( ")" )
-                    || trimmed_line.startsWith( "]" )
-                    || trimmed_line.startsWith( "}" ) )
+            while ( trimmedLine.startsWith( ')' )
+                    || trimmedLine.startsWith( ']' )
+                    || trimmedLine.startsWith( '}' ) )
             {
-                --next_level;
+                --nextLevel;
 
-                if ( trimmed_line.startsWith( "}" ) )
+                if ( trimmedLine.startsWith( '}' ) )
                 {
                     --level;
                 }
 
-                trimmed_line = trimmed_line.slice( 1 );
+                trimmedLine = trimmedLine.slice( 1 );
             }
 
-            level_array.push( level );
-            next_level_array.push( next_level );
-            level = next_level;
+            levelArray.push( level );
+            nextLevelArray.push( nextLevel );
+            level = nextLevel;
         }
 
-        for ( line_index = 0;
-              line_index < line_array.length;
-              ++line_index )
+        for ( let lineIndex = 0;
+              lineIndex < lineArray.length;
+              ++lineIndex )
         {
-            line = line_array[ line_index ];
-            level = level_array[ line_index ];
+            let line = lineArray[ lineIndex ];
+            let level = levelArray[ lineIndex ];
 
-            line_indentation = GetLineIndentation( line );
-            level_indentation = GetLevelIndentation( level );
+            let lineIndentation = getLineIndentation( line );
+            let levelIndentation = getLevelIndentation( level );
 
-            if ( line_indentation.length < level_indentation.length )
+            if ( lineIndentation.length < levelIndentation.length )
             {
-                added_indentation = level_indentation.slice( 0, level_indentation.length - line_indentation.length );
+                let addedIndentation = levelIndentation.slice( 0, levelIndentation.length - lineIndentation.length );
 
-                for ( next_line_index = line_index;
-                      next_line_index < line_array.length;
-                      ++next_line_index )
+                for ( let nextLineIndex = lineIndex;
+                      nextLineIndex < lineArray.length;
+                      ++nextLineIndex )
                 {
-                    next_line = line_array[ next_line_index ];
-                    next_level = level_array[ next_line_index ];
+                    let nextLine = lineArray[ nextLineIndex ];
+                    let nextLevel = levelArray[ nextLineIndex ];
 
-                    if ( next_level >= level )
+                    if ( nextLevel >= level )
                     {
-                        line_array[ next_line_index ] = added_indentation + next_line;
+                        lineArray[ nextLineIndex ] = addedIndentation + nextLine;
                     }
 
-                    if ( next_level <= level )
+                    if ( nextLevel <= level )
                     {
                         break;
                     }
@@ -500,305 +664,207 @@
             }
         }
 
-        return line_array.join( "\n" );
+        return lineArray.join( '\n' );
     }
 
     // ~~
 
-    function IsBlankCharacter(
+    function isBlankCharacter(
         character
         )
     {
         return (
-            character === ""
-            || character === " "
-            || character === "\t"
-            || character === "\r"
-            || character === "\n"
+            character === ''
+            || character === ' '
+            || character === '\t'
+            || character === '\r'
+            || character === '\n'
             );
     }
 
     // ~~
 
-    function SpaceBlocks(
+    function spaceBlocks(
         code,
-        opening_character,
-        closing_character
+        openingCharacter,
+        closingCharacter
         )
     {
-        var
-            character,
-            character_index,
-            literal_character,
-            next_character,
-            prior_code;
+        code = removeTrailingSpaces( replaceTabs( code ) );
 
-        code = RemoveTrailingSpaces( ReplaceTabs( code ) );
-
-        literal_character = "";
-
-        for ( character_index = 0;
-              character_index + 1 < code.length;
-              ++character_index )
-        {
-            character = code[ character_index ];
-            next_character = code[ character_index + 1 ];
-
-            if ( character === '\n'
-                 && literal_character !== "`" )
-            {
-                literal_character = "";
-            }
-
-            if ( literal_character !== "" )
-            {
-                if ( character === "\\" )
+        return (
+            getProcessedCode(
+                code,
+                ( code ) =>
                 {
-                    ++character_index;
-                }
-                else if ( character === literal_character )
-                {
-                    literal_character = "";
-                }
-            }
-            else if ( character === "/"
-                      && next_character === "/" )
-            {
-                character_index += 2;
-
-                while ( character_index < code.length
-                        && code[ character_index ] !== '\n' )
-                {
-                    ++character_index;
-                }
-            }
-            else if ( character === "/"
-                      && next_character === "*" )
-            {
-                character_index += 2;
-
-                while ( character_index + 1 < code.length
-                        && code[ character_index ] !== '*'
-                        && code[ character_index + 1 ] !== '/' )
-                {
-                    ++character_index;
-                }
-            }
-            else
-            {
-                if ( character === "/"
-                     && next_character !== "/" )
-                {
-                    prior_code = code.slice( 0, character_index ).trimRight();
-
-                    if ( prior_code === ""
-                         || prior_code.endsWith( "=" )
-                         || prior_code.endsWith( "<" )
-                         || prior_code.endsWith( ">" )
-                         || prior_code.endsWith( "+" )
-                         || prior_code.endsWith( "-" )
-                         || prior_code.endsWith( "*" )
-                         || prior_code.endsWith( "/" )
-                         || prior_code.endsWith( "%" )
-                         || prior_code.endsWith( "^" )
-                         || prior_code.endsWith( "~" )
-                         || prior_code.endsWith( "&" )
-                         || prior_code.endsWith( "|" )
-                         || prior_code.endsWith( "!" )
-                         || prior_code.endsWith( "?" )
-                         || prior_code.endsWith( ":" )
-                         || prior_code.endsWith( "(" )
-                         || prior_code.endsWith( "[" )
-                         || prior_code.endsWith( "{" )
-                         || prior_code.endsWith( ";" )
-                         || prior_code.endsWith( "," )
-                         || prior_code.endsWith( " return" )
-                         || prior_code.endsWith( "\treturn" )
-                         || prior_code.endsWith( "\rreturn" )
-                         || prior_code.endsWith( "\nreturn" )
-                         || prior_code === "return" )
+                    for ( let characterIndex = 0;
+                          characterIndex + 1 < code.length;
+                          ++characterIndex )
                     {
-                        literal_character = "/";
+                        let character = code[ characterIndex ];
+                        let nextCharacter = code[ characterIndex + 1 ];
 
-                        continue;
+                        if ( ( character === openingCharacter
+                               && nextCharacter !== closingCharacter
+                               && !isBlankCharacter( nextCharacter ) )
+                             || ( nextCharacter === closingCharacter
+                                  && character !== openingCharacter
+                                  && !isBlankCharacter( character ) ) )
+                        {
+                            code
+                                = code.slice( 0, characterIndex + 1 )
+                                  + ' '
+                                  + code.slice( characterIndex + 1 );
+                        }
                     }
+
+                    return code;
                 }
-
-                if ( character === "'"
-                     || character === "\""
-                     || character === "`" )
-                {
-                    literal_character = character;
-                }
-                else
-                {
-                    if ( ( character === opening_character
-                           && next_character !== closing_character
-                           && !IsBlankCharacter( next_character ) )
-                         || ( next_character === closing_character
-                              && character !== opening_character
-                              && !IsBlankCharacter( character ) ) )
-                    {
-                        code
-                            = code.slice( 0, character_index + 1 )
-                              + " "
-                              + code.slice( character_index + 1 );
-                    }
-                }
-            }
-        }
-
-        return code;
+                )
+            );
     }
 
     // ~~
 
-    function SpaceBraces(
+    function spaceBraces(
         code
         )
     {
-        return SpaceBlocks( code, "{", "}" );
+        return spaceBlocks( code, '{', '}' );
     }
 
     // ~~
 
-    function SpaceBrackets(
+    function spaceBrackets(
         code
         )
     {
-        return SpaceBlocks( code, "[", "]" );
+        return spaceBlocks( code, '[', ']' );
     }
 
     // ~~
 
-    function SpaceParentheses(
+    function spaceParentheses(
         code
         )
     {
-        return SpaceBlocks( code, "(", ")" );
+        return spaceBlocks( code, '(', ')' );
     }
 
     // ~~
 
-    function FixEmptyLines(
+    function fixEmptyLines(
         code
         )
     {
-        var
-            line,
-            line_array,
-            line_index,
-            next_line,
-            prior_line;
+        let lineArray = [];
+        let priorLine = '';
 
-        line_array = [];
-        prior_line = "";
-
-        for ( line of code.split( "\n" ) )
+        for ( let line of code.split( '\n' ) )
         {
             line = line.trimRight();
 
-            if ( line !== ""
-                 || prior_line !== "" )
+            if ( line !== ''
+                 || priorLine !== '' )
             {
-                line_array.push( line );
+                lineArray.push( line );
             }
 
-            prior_line = line;
+            priorLine = line;
         }
 
         code
-            = line_array
-                  .join( "\n" )
-                  .replaceAll( "{\n\n", "{\n" )
-                  .replaceAll( "[\n\n", "[\n" )
-                  .replaceAll( "(\n\n", "(\n" )
-                  .replace( /\n\n( *)\}/g, "\n$1}" )
-                  .replace( /\n\n( *)\]/g, "\n$1]" )
-                  .replace( /\n\n( *)\)/g, "\n$1)" );
+            = lineArray
+                  .join( '\n' )
+                  .replaceAll( '{\n\n', '{\n' )
+                  .replaceAll( '[\n\n', '[\n' )
+                  .replaceAll( '(\n\n', '(\n' )
+                  .replace( /\n\n( *)\}/g, '\n$1}' )
+                  .replace( /\n\n( *)\]/g, '\n$1]' )
+                  .replace( /\n\n( *)\)/g, '\n$1)' );
 
-        line_array = code.split( "\n" );
+        lineArray = code.split( '\n' );
 
-        for ( line_index = 0;
-              line_index < line_array.length - 1;
-              ++line_index )
+        for ( let lineIndex = 0;
+              lineIndex < lineArray.length - 1;
+              ++lineIndex )
         {
-            line = line_array[ line_index ].trim();
-            next_line = line_array[ line_index + 1 ].trim();
+            let line = lineArray[ lineIndex ].trim();
+            let nextLine = lineArray[ lineIndex + 1 ].trim();
 
-            if ( line !== ""
-                 && next_line !== "" )
+            if ( line !== ''
+                 && nextLine !== '' )
             {
-                if ( ( line.startsWith( "// -- " )
-                       || line.startsWith( "// ~~" )
-                       || ( line === "}"
-                            && next_line !== "else"
-                            && !next_line.startsWith( "else " )
-                            && !next_line.startsWith( "}" )
-                            && !next_line.startsWith( "]" )
-                            && !next_line.startsWith( ")" )
-                            && !next_line.startsWith( "<" ) ) )
-                     || ( line !== "{"
-                          && ( next_line.startsWith( "// -- " )
-                               || next_line.startsWith( "// ~~" )
-                               || next_line.startsWith( "if " )
-                               || next_line.startsWith( "do " )
-                               || ( line !== "}"
-                                    && next_line.startsWith( "while " ) )
-                               || next_line.startsWith( "for " )
-                               || next_line.startsWith( "return " )
-                               || next_line == "return" ) ) )
+                if ( ( line.startsWith( '// -- ' )
+                       || line.startsWith( '// ~~' )
+                       || ( line === '}'
+                            && nextLine !== 'else'
+                            && !nextLine.startsWith( 'else ' )
+                            && !nextLine.startsWith( '}' )
+                            && !nextLine.startsWith( ']' )
+                            && !nextLine.startsWith( ')' )
+                            && !nextLine.startsWith( '<' ) ) )
+                     || ( line !== '{'
+                          && ( nextLine.startsWith( '// -- ' )
+                               || nextLine.startsWith( '// ~~' )
+                               || nextLine.startsWith( 'if ' )
+                               || nextLine.startsWith( 'do ' )
+                               || ( line !== '}'
+                                    && nextLine.startsWith( 'while ' ) )
+                               || nextLine.startsWith( 'for ' )
+                               || nextLine.startsWith( 'return ' )
+                               || nextLine == 'return' ) ) )
                 {
-                    line_array.splice( line_index + 1, 0, "" );
+                    lineArray.splice( lineIndex + 1, 0, '' );
                 }
             }
         }
 
-        return line_array.join( "\n" );
+        return lineArray.join( '\n' );
     }
 
     // ~~
 
-    function GetIdentifierCase(
+    function getIdentifierCase(
         identifier
         )
     {
         if ( /^[A-Z][A-Z0-9_]+$/.test( identifier ) )
         {
-            return "SCREAM_CASE";
+            return 'SCREAM_CASE';
         }
         else if ( /^[A-Z][a-zA-Z0-9]*$/.test( identifier ) )
         {
-            return "PascalCase";
+            return 'PascalCase';
         }
         else if ( /^[a-z][a-z0-9_]*$/.test( identifier ) )
         {
-            return "snake_case";
+            return 'snake_case';
         }
         else if ( /^[a-z][a-zA-Z0-9]*$/.test( identifier ) )
         {
-            return "camelCase";
+            return 'camelCase';
         }
         else
         {
-            return "";
+            return '';
         }
     }
 
     // ~~
 
-    function GetIdentifierWordArray(
+    function getIdentifierWordArray(
         identifier,
-        identifier_case
+        identifierCase
         )
     {
-        if ( identifier_case === "SCREAM_CASE"
-             || identifier_case === "snake_case" )
+        if ( identifierCase === 'SCREAM_CASE'
+             || identifierCase === 'snake_case' )
         {
-            return identifier.split( "_" );
+            return identifier.split( '_' );
         }
-        else if ( identifier_case === "PascalCase"
-                  || identifier_case === "camelCase" )
+        else if ( identifierCase === 'PascalCase'
+                  || identifierCase === 'camelCase' )
         {
             return identifier.split( /(?=[A-Z])/ ).map( word => word.toLowerCase() );
         }
@@ -810,29 +876,29 @@
 
     // ~~
 
-    function GetFixedIdentifier(
+    function getFixedIdentifier(
         identifier,
-        old_identifier_case,
-        new_identifier_case
+        oldIdentifierCase,
+        newIdentifierCase
         )
     {
-        let identifier_word_array = GetIdentifierWordArray( identifier, old_identifier_case );
+        let identifierWordArray = getIdentifierWordArray( identifier, oldIdentifierCase );
 
-        if ( new_identifier_case === "SCREAM_CASE" )
+        if ( newIdentifierCase === 'SCREAM_CASE' )
         {
-            return identifier_word_array.join( "_" ).toUpperCase();
+            return identifierWordArray.join( '_' ).toUpperCase();
         }
-        else if ( new_identifier_case === "PascalCase" )
+        else if ( newIdentifierCase === 'PascalCase' )
         {
-            return identifier_word_array.map( word => word.charAt( 0 ).toUpperCase() + word.slice( 1 ).toLowerCase() ).join( "" );
+            return identifierWordArray.map( word => word.charAt( 0 ).toUpperCase() + word.slice( 1 ).toLowerCase() ).join( '' );
         }
-        else if ( new_identifier_case === "snake_case" )
+        else if ( newIdentifierCase === 'snake_case' )
         {
-            return identifier_word_array.join( "_" ).toLowerCase();
+            return identifierWordArray.join( '_' ).toLowerCase();
         }
-        else if ( new_identifier_case === "camelCase" )
+        else if ( newIdentifierCase === 'camelCase' )
         {
-            return identifier_word_array[ 0 ].toLowerCase() + identifier_word_array.slice( 1 ).map( word => word.charAt( 0 ).toUpperCase() + word.slice( 1 ).toLowerCase() ).join( "" );
+            return identifierWordArray[ 0 ].toLowerCase() + identifierWordArray.slice( 1 ).map( word => word.charAt( 0 ).toUpperCase() + word.slice( 1 ).toLowerCase() ).join( '' );
         }
         else
         {
@@ -842,52 +908,54 @@
 
     // ~~
 
-    function FixIdentifiers(
+    function fixIdentifiers(
         code
         )
     {
-        return code.replace(
-            /\w+/g,
-            function( identifier )
-            {
-                var
-                    identifier_case;
+        return (
+            getProcessedCode(
+                code,
+                ( code ) =>
+                {
+                    return code.replace(
+                        /\w+/g,
+                        function( identifier )
+                        {
+                            let identifierCase = getIdentifierCase( identifier );
 
-                identifier_case = GetIdentifierCase( identifier );
-
-                if ( identifier_case === "SCREAM_CASE" )
-                {
-                    return GetFixedIdentifier( identifier, identifier_case, ScreamCaseIdentifierCase );
+                            if ( identifierCase === 'SCREAM_CASE' )
+                            {
+                                return getFixedIdentifier( identifier, identifierCase, screamCaseIdentifierCase );
+                            }
+                            else if ( identifierCase === 'PascalCase' )
+                            {
+                                return getFixedIdentifier( identifier, identifierCase, pascalCaseIdentifierCase );
+                            }
+                            else if ( identifierCase === 'snake_case' )
+                            {
+                                return getFixedIdentifier( identifier, identifierCase, snakeCaseIdentifierCase );
+                            }
+                            else if ( identifierCase === 'camelCase' )
+                            {
+                                return getFixedIdentifier( identifier, identifierCase, camelCaseIdentifierCase );
+                            }
+                            else
+                            {
+                                return identifier;
+                            }
+                        }
+                        );
                 }
-                else if ( identifier_case === "PascalCase" )
-                {
-                    return GetFixedIdentifier( identifier, identifier_case, PascalCaseIdentifierCase );
-                }
-                else if ( identifier_case === "snake_case" )
-                {
-                    return GetFixedIdentifier( identifier, identifier_case, SnakeCaseIdentifierCase );
-                }
-                else if ( identifier_case === "camelCase" )
-                {
-                    return GetFixedIdentifier( identifier, identifier_case, CamelCaseIdentifierCase );
-                }
-                else
-                {
-                    return identifier;
-                }
-            }
+                )
             );
     }
 
     // ~~
 
-    function CheckAll(
+    function checkAll(
         )
     {
-        var
-            checkbox;
-
-        for ( checkbox of document.querySelectorAll( "input[type=\"checkbox\"]" ) )
+        for ( let checkbox of document.querySelectorAll( 'input[type=\"checkbox\"]' ) )
         {
             checkbox.checked = true;
         }
@@ -895,13 +963,10 @@
 
     // ~~
 
-    function UncheckAll(
+    function uncheckAll(
         )
     {
-        var
-            checkbox;
-
-        for ( checkbox of document.querySelectorAll( "input[type=\"checkbox\"]" ) )
+        for ( let checkbox of document.querySelectorAll( 'input[type=\"checkbox\"]' ) )
         {
             checkbox.checked = false;
         }
@@ -909,92 +974,89 @@
 
     // ~~
 
-    function FixCode(
+    function fixCode(
         )
     {
-        var
-            code;
+        indentation = document.getElementById( 'indentation' ).value;
+        screamCaseIdentifierCase = document.getElementById( 'scream-case' ).value;
+        pascalCaseIdentifierCase = document.getElementById( 'pascal-case' ).value;
+        snakeCaseIdentifierCase = document.getElementById( 'snake-case' ).value;
+        camelCaseIdentifierCase = document.getElementById( 'camel-case' ).value;
 
-        Indentation = document.getElementById( "indentation" ).value;
-        ScreamCaseIdentifierCase = document.getElementById( "scream-case" ).value;
-        PascalCaseIdentifierCase = document.getElementById( "pascal-case" ).value;
-        SnakeCaseIdentifierCase = document.getElementById( "snake-case" ).value;
-        CamelCaseIdentifierCase = document.getElementById( "camel-case" ).value;
+        let code = document.getElementById( 'old-code' ).value;
 
-        code = document.getElementById( "old-code" ).value;
-
-        if ( document.getElementById( "replace-tabs" ).checked )
+        if ( document.getElementById( 'replace-tabs' ).checked )
         {
-            code = ReplaceTabs( code );
+            code = replaceTabs( code );
         }
 
-        if ( document.getElementById( "remove-comments" ).checked )
+        if ( document.getElementById( 'remove-comments' ).checked )
         {
-            code = RemoveComments( code );
+            code = removeComments( code );
         }
 
-        if ( document.getElementById( "double-leading-spaces" ).checked )
+        if ( document.getElementById( 'double-leading-spaces' ).checked )
         {
-            code = DoubleLeadingSpaces( code );
+            code = doubleLeadingSpaces( code );
         }
 
-        if ( document.getElementById( "remove-trailing-spaces" ).checked )
+        if ( document.getElementById( 'remove-trailing-spaces' ).checked )
         {
-            code = RemoveTrailingSpaces( code );
+            code = removeTrailingSpaces( code );
         }
 
-        if ( document.getElementById( "remove-trailing-commas" ).checked )
+        if ( document.getElementById( 'remove-trailing-commas' ).checked )
         {
-            code = RemoveTrailingCommas( code );
+            code = removeTrailingCommas( code );
         }
 
-        if ( document.getElementById( "split-braces" ).checked )
+        if ( document.getElementById( 'split-braces' ).checked )
         {
-            code = SplitBraces( code );
+            code = splitBraces( code );
         }
 
-        if ( document.getElementById( "split-brackets" ).checked )
+        if ( document.getElementById( 'split-brackets' ).checked )
         {
-            code = SplitBrackets( code );
+            code = splitBrackets( code );
         }
 
-        if ( document.getElementById( "indent-braces" ).checked )
+        if ( document.getElementById( 'indent-braces' ).checked )
         {
-            code = IndentBraces( code );
+            code = indentBraces( code );
         }
 
-        if ( document.getElementById( "space-braces" ).checked )
+        if ( document.getElementById( 'space-braces' ).checked )
         {
-            code = SpaceBraces( code );
+            code = spaceBraces( code );
         }
 
-        if ( document.getElementById( "space-brackets" ).checked )
+        if ( document.getElementById( 'space-brackets' ).checked )
         {
-            code = SpaceBrackets( code );
+            code = spaceBrackets( code );
         }
 
-        if ( document.getElementById( "space-parentheses" ).checked )
+        if ( document.getElementById( 'space-parentheses' ).checked )
         {
-            code = SpaceParentheses( code );
+            code = spaceParentheses( code );
         }
 
-        if ( document.getElementById( "fix-empty-lines" ).checked )
+        if ( document.getElementById( 'fix-empty-lines' ).checked )
         {
-            code = FixEmptyLines( code );
+            code = fixEmptyLines( code );
         }
 
-        if ( document.getElementById( "fix-identifiers" ).checked )
+        if ( document.getElementById( 'fix-identifiers' ).checked )
         {
-            code = FixIdentifiers( code );
+            code = fixIdentifiers( code );
         }
 
-        document.getElementById( "new-code" ).value = code;
-        document.getElementById( "new-code" ).focus();
+        document.getElementById( 'new-code' ).value = code;
+        document.getElementById( 'new-code' ).focus();
 
-        if ( document.getElementById( "copy-result" ).checked )
+        if ( document.getElementById( 'copy-result' ).checked )
         {
-            document.getElementById( "new-code" ).setSelectionRange( 0, code.length );
-            document.execCommand( "copy" );
+            document.getElementById( 'new-code' ).setSelectionRange( 0, code.length );
+            document.execCommand( 'copy' );
         }
     }
 </script>

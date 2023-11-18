@@ -2,11 +2,11 @@
 
 # Cast
 
-Code transformer.
+Code formatter and transformer.
 
 ## Limitations
 
-*   Doesn't check for string literals.
+*   Incomplete support for comments and string literals.
 
 ## Version
 
