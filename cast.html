@@ -795,15 +795,16 @@
             if ( line !== ''
                  && nextLine !== '' )
             {
-                if ( ( line.startsWith( '// -- ' )
-                       || line.startsWith( '// ~~' )
-                       || ( line === '}'
-                            && nextLine !== 'else'
-                            && !nextLine.startsWith( 'else ' )
-                            && !nextLine.startsWith( '}' )
-                            && !nextLine.startsWith( ']' )
-                            && !nextLine.startsWith( ')' )
-                            && !nextLine.startsWith( '<' ) ) )
+                if ( line.startsWith( '// -- ' )
+                     || line.startsWith( '// ~~' )
+                     || ( line === '}'
+                          && nextLine !== 'else'
+                          && !nextLine.startsWith( 'else ' )
+                          && !nextLine.startsWith( 'while ' )
+                          && !nextLine.startsWith( '}' )
+                          && !nextLine.startsWith( ']' )
+                          && !nextLine.startsWith( ')' )
+                          && !nextLine.startsWith( '<' ) )
                      || ( line !== '{'
                           && ( nextLine.startsWith( '// -- ' )
                                || nextLine.startsWith( '// ~~' )
