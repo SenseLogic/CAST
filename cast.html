@@ -173,13 +173,13 @@
             <div>
                 <input id="split-brackets" type="checkbox" checked/>Split brackets
             </div>
-        </div>
-        <div>
-        </div>
-        <div>
             <div>
                 <input id="indent-braces" type="checkbox" checked/>Indent braces
             </div>
+        </div>
+        <div>
+        </div>
+        <div>
             <div>
                 <input id="space-braces" type="checkbox" checked/>Space braces
             </div>
@@ -188,6 +188,12 @@
             </div>
             <div>
                 <input id="space-parentheses" type="checkbox" checked/>Space parentheses
+            </div>
+            <div>
+                <input id="space-commas" type="checkbox" checked/>Space commas
+            </div>
+            <div>
+                <input id="space-semicolons" type="checkbox" checked/>Space semicolons
             </div>
             <div>
                 <input id="fix-empty-lines" type="checkbox" checked/>Fix empty lines
@@ -710,6 +716,8 @@
                 code,
                 ( code ) =>
                 {
+                    code = '\b' + code + '\b';
+
                     for ( let characterIndex = 0;
                           characterIndex + 1 < code.length;
                           ++characterIndex )
@@ -731,7 +739,7 @@
                         }
                     }
 
-                    return code;
+                    return code.slice( 1, -1 );
                 }
                 )
             );
@@ -762,6 +770,24 @@
         )
     {
         return spaceBlocks( code, '(', ')' );
+    }
+
+    // ~~
+
+    function spaceCommas(
+        code
+        )
+    {
+        return spaceBlocks( code, ',', '' );
+    }
+
+    // ~~
+
+    function spaceSemicolons(
+        code
+        )
+    {
+        return spaceBlocks( code, ';', '' );
     }
 
     // ~~
@@ -1055,6 +1081,16 @@
         if ( document.getElementById( 'space-parentheses' ).checked )
         {
             code = spaceParentheses( code );
+        }
+
+        if ( document.getElementById( 'space-commas' ).checked )
+        {
+            code = spaceCommas( code );
+        }
+
+        if ( document.getElementById( 'space-semicolons' ).checked )
+        {
+            code = spaceSemicolons( code );
         }
 
         if ( document.getElementById( 'fix-empty-lines' ).checked )
