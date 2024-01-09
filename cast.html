@@ -156,7 +156,10 @@
                 <input id="replace-tabs" type="checkbox" checked/>Replace tabs
             </div>
             <div>
-                <input id="remove-comments" type="checkbox"/>Remove comments
+                <input id="remove-slash-comments" type="checkbox"/>Remove slash comments
+            </div>
+            <div>
+                <input id="remove-hash-comments" type="checkbox"/>Remove hash comments
             </div>
             <div>
                 <input id="double-leading-spaces" type="checkbox"/>Double leading spaces
@@ -180,6 +183,9 @@
         <div>
         </div>
         <div>
+            <div>
+                <input id="space-assignments" type="checkbox"/>Space assignments
+            </div>
             <div>
                 <input id="space-braces" type="checkbox" checked/>Space braces
             </div>
@@ -437,11 +443,20 @@
 
     // ~~
 
-    function removeComments(
+    function removeSlashComments(
         code
         )
     {
         return code.replace( /\/\/.*$/gm, '' );
+    }
+
+    // ~~
+
+    function removeHashComments(
+        code
+        )
+    {
+        return code.replace( /\#.*$/gm, '' );
     }
 
     // ~~
@@ -698,6 +713,31 @@
             || character === '\t'
             || character === '\r'
             || character === '\n'
+            );
+    }
+
+    // ~~
+
+    function spaceAssignments(
+        code
+        )
+    {
+        code = removeTrailingSpaces( replaceTabs( code ) );
+
+        return (
+            removeTrailingSpaces(
+                getProcessedCode(
+                    code,
+                    ( code ) =>
+                    {
+                        return (
+                            code
+                                .replace( /([a-zA-Z0-9_])=(?=[a-zA-Z0-9_"'])/g, '$1 = ' )
+                                .replace( /([a-zA-Z0-9_])=$/g, '$1 = ' )
+                            );
+                    }
+                    )
+                )
             );
     }
 
@@ -1033,9 +1073,14 @@
             code = replaceTabs( code );
         }
 
-        if ( document.getElementById( 'remove-comments' ).checked )
+        if ( document.getElementById( 'remove-slash-comments' ).checked )
         {
-            code = removeComments( code );
+            code = removeSlashComments( code );
+        }
+
+        if ( document.getElementById( 'remove-hash-comments' ).checked )
+        {
+            code = removeHashComments( code );
         }
 
         if ( document.getElementById( 'double-leading-spaces' ).checked )
@@ -1066,6 +1111,11 @@
         if ( document.getElementById( 'indent-braces' ).checked )
         {
             code = indentBraces( code );
+        }
+
+        if ( document.getElementById( 'space-assignments' ).checked )
+        {
+            code = spaceAssignments( code );
         }
 
         if ( document.getElementById( 'space-braces' ).checked )
