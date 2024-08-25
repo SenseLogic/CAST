@@ -202,6 +202,9 @@
                 <input id="space-semicolons" type="checkbox" checked/>Space semicolons
             </div>
             <div>
+                <input id="space-colons" type="checkbox" checked/>Space colons
+            </div>
+            <div>
                 <input id="fix-empty-lines" type="checkbox" checked/>Fix empty lines
             </div>
             <div>
@@ -832,6 +835,23 @@
 
     // ~~
 
+    function spaceColons(
+        code
+        )
+    {
+        return (
+            getProcessedCode(
+                code,
+                ( code ) =>
+                {
+                    return code.replace( /([^:\s]):/gm, '$1 :' ).replace( /:([^:\s])/gm, ': $1' );
+                }
+                )
+            );
+    }
+
+    // ~~
+
     function fixEmptyLines(
         code
         )
@@ -1146,6 +1166,11 @@
         if ( document.getElementById( 'space-semicolons' ).checked )
         {
             code = spaceSemicolons( code );
+        }
+
+        if ( document.getElementById( 'space-colons' ).checked )
+        {
+            code = spaceColons( code );
         }
 
         if ( document.getElementById( 'fix-empty-lines' ).checked )
